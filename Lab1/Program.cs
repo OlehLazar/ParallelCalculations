@@ -1,15 +1,13 @@
 ﻿// Генерація вхідних даних
-using System.Drawing;
-
-List<Point> points = GeneratePoints(10000);
+List<Point> points = GeneratePoints(3);
 SavePointsToFile(points, "points.txt");
 
 // Зчитування вхідних даних з файлу
 List<Point> loadedPoints = LoadPointsFromFile("points.txt");
 
-// Знаходження пари найближчих точок
+// Знаходження пари найближчих точок з використанням багатопотоковості
 var startTime = DateTime.Now;
-var closestPair = FindClosestPair(loadedPoints);
+var closestPair = FindClosestPairParallel(loadedPoints);
 var endTime = DateTime.Now;
 
 Console.WriteLine($"Closest pair: ({closestPair.Item1.X}, {closestPair.Item1.Y}) and ({closestPair.Item2.X}, {closestPair.Item2.Y})");
@@ -53,25 +51,31 @@ static List<Point> LoadPointsFromFile(string filename)
 	return points;
 }
 
-static Tuple<Point, Point> FindClosestPair(List<Point> points)
+static Tuple<Point, Point> FindClosestPairParallel(List<Point> points)
 {
 	double minDistance = double.MaxValue;
 	Point closestPoint1 = null;
 	Point closestPoint2 = null;
 
-	for (int i = 0; i < points.Count; i++)
+	Parallel.For(0, points.Count, i =>
 	{
 		for (int j = i + 1; j < points.Count; j++)
 		{
 			double distance = Distance(points[i], points[j]);
 			if (distance < minDistance)
 			{
-				minDistance = distance;
-				closestPoint1 = points[i];
-				closestPoint2 = points[j];
+				lock (points)
+				{
+					if (distance < minDistance)
+					{
+						minDistance = distance;
+						closestPoint1 = points[i];
+						closestPoint2 = points[j];
+					}
+				}
 			}
 		}
-	}
+	});
 
 	return Tuple.Create(closestPoint1, closestPoint2);
 }
