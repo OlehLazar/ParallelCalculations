@@ -3,18 +3,25 @@ using AuthenticationService.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using StackExchange.Redis;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+	options.Configuration = "localhost:6379";
+	options.InstanceName = "Redis.Core.WebApi_";
+});
+
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Реєстрація AuthService
 builder.Services.AddScoped<AuthService>();
 
-// Реєстрація бази даних
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 	options.UseInMemoryDatabase("AuthDB"));
 
